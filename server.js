@@ -3,8 +3,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
+const { initSchema } = require('./db');
+const logger = require('./utils/logger');
 const libraryRoutes = require('./routes/library');
 const searchRoutes = require('./routes/search');
+const uploadRoutes = require('./routes/upload');
+const indexStatusRoutes = require('./routes/index_status');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +31,8 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api', libraryRoutes);
 app.use('/api', searchRoutes);
+app.use('/api', uploadRoutes);
+app.use('/api', indexStatusRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -35,14 +41,22 @@ app.use((req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  logger.error('Unhandled error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`SceneFinder backend running on port ${PORT}`);
-});
+// Initialize DB schema then start server
+initSchema()
+  .then(() => {
+    app.listen(PORT, () => {
+      logger.info(`SceneFinder backend running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    logger.error('Failed to initialize database schema:', err);
+    process.exit(1);
+  });
 
 module.exports = app;
