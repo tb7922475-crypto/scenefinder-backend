@@ -15,14 +15,14 @@ router.get('/library', async (req, res) => {
     );
 
     const videos = result.rows.map(row => ({
-      id: row.id,
+      video_id: row.id,
       title: row.title,
-      clipName: row.clip_name,
+      clip_name: row.clip_name || null,
       status: row.status,
-      frameCount: row.frame_count || 0,
+      frame_count: row.frame_count || 0,
       duration: row.duration_seconds || 0,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
     }));
 
     res.json({
@@ -63,14 +63,14 @@ router.get('/library/:id', async (req, res) => {
     const frameCount = parseInt(framesResult.rows[0].count);
 
     res.json({
-      id: video.id,
+      video_id: video.id,
       title: video.title,
-      clipName: video.clip_name,
+      clip_name: video.clip_name || null,
       status: video.status,
-      frameCount: video.frame_count || frameCount,
+      frame_count: video.frame_count || frameCount,
       duration: video.duration_seconds || 0,
-      createdAt: video.created_at,
-      updatedAt: video.updated_at,
+      created_at: video.created_at,
+      updated_at: video.updated_at,
     });
   } catch (err) {
     console.error('Library fetch error:', err);

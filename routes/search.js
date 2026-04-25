@@ -90,11 +90,22 @@ router.post('/search', async (req, res) => {
 
     const sortedScenes = scenes.sort((a, b) => b.confidence - a.confidence);
 
+    // Normalise to the snake_case schema the frontend expects
+    const normalisedResults = sortedScenes.map(scene => ({
+      anime_title: scene.animeTitle,
+      clip_name: scene.clipName,
+      video_id: scene.videoId,
+      start_timestamp: scene.startTimestamp,
+      end_timestamp: scene.endTimestamp,
+      confidence: scene.confidence,
+      thumbnail: scene.thumbnail || null,
+      description: scene.description || null,
+    }));
+
     res.json({
       query,
-      results: sortedScenes,
-      totalResults: sortedScenes.length,
-      framesSearched: frames.length,
+      results: normalisedResults,
+      totalResults: normalisedResults.length,
     });
   } catch (err) {
     console.error('Search error:', err);
