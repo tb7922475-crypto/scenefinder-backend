@@ -54,4 +54,53 @@ router.get('/index-status', async (req, res) => {
   }
 });
 
+/**
+ * GET /index-status/:videoId
+ * Returns per-video indexing progress so the frontend can poll after upload.
+ */
+router.get('/index-status/:videoId', async (req, res) => {
+  const { videoId } = req.params;
+
+  try {
+    const [videoResult, framesResult] = await Promise.all([
+      db.query(`SELECT id, status, frame_count FROM videos WHERE id = $1`, [videoId]),
+      db.query(`SELECT COUNT(*) AS count FROM frames WHERE video_id = $1`, [videoId]),
+    ]);
+
+    if (videoResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Video not found',
+        details: `No video with id ${videoId}`,
+      });
+    }
+
+    const video = videoResult.rows[0];
+    const framesProcessed = parseInt(framesResult.rows[0].count, 10);
+    // total_frames is the authoritative count once indexing completes;
+    // while processing, use the live frame count as the best estimate.
+    const totalFrames = video.frame_count || framesProcessed;
+
+    const statusMessages = {
+      pending:    'Upload received. Indexing will begin shortly.',
+      processing: 'Frame extraction and embedding generation in progress.',
+      ready:      'Indexing complete. Video is available for search.',
+      failed:     'Indexing failed. Please re-upload the video.',
+    };
+
+    res.json({
+      videoId: video.id,
+      status: video.status,
+      frames_processed: framesProcessed,
+      total_frames: totalFrames,
+      message: statusMessages[video.status] || 'Unknown status.',
+    });
+  } catch (err) {
+    logger.error(`Index-status fetch error for video ${videoId}:`, err.message);
+    res.status(500).json({
+      error: 'Failed to fetch index status',
+      details: err.message,
+    });
+  }
+});
+
 module.exports = router;

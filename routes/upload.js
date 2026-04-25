@@ -53,11 +53,11 @@ router.post('/upload', upload.single('video'), async (req, res) => {
 
   try {
     // ------------------------------------------------------------------
-    // 1. Insert video record with status = 'processing'
+    // 1. Insert video record with status = 'pending' and respond immediately
     // ------------------------------------------------------------------
     const videoInsert = await db.query(
       `INSERT INTO videos (title, clip_name, file_path, status)
-       VALUES ($1, $2, $3, 'processing')
+       VALUES ($1, $2, $3, 'pending')
        RETURNING id`,
       [title, clipName, videoPath]
     );
@@ -69,74 +69,90 @@ router.post('/upload', upload.single('video'), async (req, res) => {
     // indexing pipeline (which can take minutes for long videos).
     res.json({
       videoId,
-      status: 'processing',
+      status: 'pending',
       frameCount: 0,
-      message: 'Upload accepted. Frame extraction and indexing are running in the background.',
+      message: 'Upload accepted. Indexing will begin shortly.',
     });
-
-    // ------------------------------------------------------------------
-    // 2. Extract frames (runs after response is sent)
-    // ------------------------------------------------------------------
-    const framesDir = path.join('/tmp', 'scenefinder', 'frames', videoId);
-    const framePaths = await extractFrames(videoPath, framesDir, FRAME_INTERVAL);
-
-    // ------------------------------------------------------------------
-    // 3. Generate embeddings and persist each frame
-    // ------------------------------------------------------------------
-    let indexedCount = 0;
-    for (let i = 0; i < framePaths.length; i++) {
-      const framePath = framePaths[i];
-      const timestampSeconds = i * FRAME_INTERVAL;
-
-      try {
-        const { embedding, description } = await generateImageEmbedding(framePath);
-
-        await db.query(
-          `INSERT INTO frames (video_id, timestamp_seconds, description, embedding, thumbnail_path)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [videoId, timestampSeconds, description, JSON.stringify(embedding), framePath]
-        );
-        indexedCount++;
-      } catch (frameErr) {
-        logger.warn(`Skipping frame ${i} for video ${videoId}: ${frameErr.message}`);
-      }
-    }
-
-    // ------------------------------------------------------------------
-    // 4. Mark video as ready and update frame count
-    // ------------------------------------------------------------------
-    await db.query(
-      `UPDATE videos
-       SET status = 'ready', frame_count = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [indexedCount, videoId]
-    );
-
-    // ------------------------------------------------------------------
-    // 5. Refresh index_status aggregate row
-    // ------------------------------------------------------------------
-    await db.query(`
-      UPDATE index_status
-      SET
-        total_videos   = (SELECT COUNT(*) FROM videos),
-        total_frames   = (SELECT COUNT(*) FROM frames),
-        indexed_frames = (SELECT COUNT(*) FROM frames WHERE embedding IS NOT NULL),
-        last_updated   = NOW()
-      WHERE id = (SELECT id FROM index_status ORDER BY id LIMIT 1)
-    `);
-
-    logger.info(`Video ${videoId} indexed: ${indexedCount}/${framePaths.length} frames`);
   } catch (err) {
-    logger.error(`Upload/indexing error for video ${videoId}:`, err.message);
+    logger.error('Upload DB insert error:', err.message);
+    return res.status(500).json({ error: 'Failed to create video record', details: err.message });
+  }
 
-    // Mark the video as failed if we have an ID
-    if (videoId) {
+  // --------------------------------------------------------------------
+  // 2. Run the indexing pipeline as a fire-and-forget background job.
+  //    The response has already been sent above; errors here are logged
+  //    and the video record is marked 'failed' but never reach the client.
+  // --------------------------------------------------------------------
+  (async () => {
+    try {
+      // Mark as processing now that the background job has started
+      await db.query(
+        `UPDATE videos SET status = 'processing', updated_at = NOW() WHERE id = $1`,
+        [videoId]
+      );
+
+      // ------------------------------------------------------------------
+      // 3. Extract frames
+      // ------------------------------------------------------------------
+      const framesDir = path.join('/tmp', 'scenefinder', 'frames', videoId);
+      const framePaths = await extractFrames(videoPath, framesDir, FRAME_INTERVAL);
+
+      // ------------------------------------------------------------------
+      // 4. Generate embeddings and persist each frame
+      // ------------------------------------------------------------------
+      let indexedCount = 0;
+      for (let i = 0; i < framePaths.length; i++) {
+        const framePath = framePaths[i];
+        const timestampSeconds = i * FRAME_INTERVAL;
+
+        try {
+          const { embedding, description } = await generateImageEmbedding(framePath);
+
+          await db.query(
+            `INSERT INTO frames (video_id, timestamp_seconds, description, embedding, thumbnail_path)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [videoId, timestampSeconds, description, JSON.stringify(embedding), framePath]
+          );
+          indexedCount++;
+        } catch (frameErr) {
+          logger.warn(`Skipping frame ${i} for video ${videoId}: ${frameErr.message}`);
+        }
+      }
+
+      // ------------------------------------------------------------------
+      // 5. Mark video as ready and update frame count
+      // ------------------------------------------------------------------
+      await db.query(
+        `UPDATE videos
+         SET status = 'ready', frame_count = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [indexedCount, videoId]
+      );
+
+      // ------------------------------------------------------------------
+      // 6. Refresh index_status aggregate row
+      // ------------------------------------------------------------------
+      await db.query(`
+        UPDATE index_status
+        SET
+          total_videos   = (SELECT COUNT(*) FROM videos),
+          total_frames   = (SELECT COUNT(*) FROM frames),
+          indexed_frames = (SELECT COUNT(*) FROM frames WHERE embedding IS NOT NULL),
+          last_updated   = NOW()
+        WHERE id = (SELECT id FROM index_status ORDER BY id LIMIT 1)
+      `);
+
+      logger.info(`Video ${videoId} indexed: ${indexedCount}/${framePaths.length} frames`);
+    } catch (err) {
+      logger.error(`Background indexing error for video ${videoId}:`, err.message);
+
+      // Mark the video as failed so the client can detect it via index-status
       await db.query(
         `UPDATE videos SET status = 'failed', updated_at = NOW() WHERE id = $1`,
         [videoId]
       ).catch(() => {});
     }
-  }
+  })();
 });
 
 module.exports = router;
