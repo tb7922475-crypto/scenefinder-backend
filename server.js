@@ -13,8 +13,24 @@ const indexStatusRoutes = require('./routes/index_status');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// CORS configuration – must be registered before any routes so that OPTIONS
+// preflight requests (sent by browsers before multipart/form-data POSTs) are
+// handled correctly and never reach the route layer as a 405.
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: process.env.CORS_ORIGIN ? true : false,
+  optionsSuccessStatus: 204, // some legacy browsers choke on 204
+};
+
+// Respond to all OPTIONS preflight requests before any other middleware runs.
+app.options('*', cors(corsOptions));
+
+// Apply CORS headers to every subsequent request.
+app.use(cors(corsOptions));
+
+// Body parsers – after CORS so preflight never hits these.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
