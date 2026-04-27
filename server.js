@@ -5,10 +5,17 @@ const cors = require('cors');
 
 const { initSchema } = require('./db');
 const logger = require('./utils/logger');
+
+logger.info('Loading route modules...');
+logger.info('Loading library routes');
 const libraryRoutes = require('./routes/library');
+logger.info('Loading search routes');
 const searchRoutes = require('./routes/search');
+logger.info('Loading upload routes');
 const uploadRoutes = require('./routes/upload');
+logger.info('Loading index_status routes');
 const indexStatusRoutes = require('./routes/index_status');
+logger.info('All route modules loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +40,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logger – runs before any route handler so every inbound request
+// is visible in the logs regardless of which handler (or 404) it reaches.
+app.use((req, _res, next) => {
+  logger.info(`Incoming request: ${req.method} ${req.path} (originalUrl: ${req.originalUrl})`);
+  next();
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({
@@ -44,15 +58,22 @@ app.get('/', (req, res) => {
 });
 
 // Routes
+logger.info('Registering /api routes...');
+logger.info('Registering library routes at /api');
 app.use('/api', libraryRoutes);
+logger.info('Registering search routes at /api');
 app.use('/api', searchRoutes);
+logger.info('Registering upload routes at /api');
 app.use('/api', uploadRoutes);
+logger.info('Registering index_status routes at /api');
 app.use('/api', indexStatusRoutes);
+logger.info('All /api routes registered');
 
 logger.info('Routes registered: GET /api/library, POST /api/search, POST /api/upload, GET /api/index-status');
 
 // 404 handler
 app.use((req, res) => {
+  logger.warn(`404 handler hit: ${req.method} ${req.path} (originalUrl: ${req.originalUrl})`);
   res.status(404).json({ error: 'Route not found' });
 });
 
