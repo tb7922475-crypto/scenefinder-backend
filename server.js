@@ -17,11 +17,10 @@ const PORT = process.env.PORT || 3000;
 // preflight requests (sent by browsers before multipart/form-data POSTs) are
 // handled correctly and never reach the route layer as a 405.
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: process.env.CORS_ORIGIN ? true : false,
-  optionsSuccessStatus: 204, // some legacy browsers choke on 204
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
 };
 
 // Respond to all OPTIONS preflight requests before any other middleware runs.
