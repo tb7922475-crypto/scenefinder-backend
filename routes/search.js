@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { generateEmbedding } = require('../utils/embeddings');
 const { performSimilaritySearch, groupFramesIntoScenes } = require('../utils/sceneGrouping');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -108,7 +109,7 @@ router.post('/search', async (req, res) => {
       totalResults: normalisedResults.length,
     });
   } catch (err) {
-    console.error('Search error:', err);
+    logger.error('Search error:', err.message);
     res.status(500).json({
       error: 'Search failed',
       details: err.message,

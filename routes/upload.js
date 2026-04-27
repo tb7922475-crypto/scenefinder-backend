@@ -37,9 +37,31 @@ const upload = multer({
 });
 
 // ---------------------------------------------------------------------------
+// Multer error-handling wrapper
+// Multer errors (LIMIT_FILE_SIZE, LIMIT_UNEXPECTED_FILE, fileFilter rejections)
+// are passed to next(err) by Express but only if the route uses a proper
+// error-handling middleware (4-argument form).  Wrapping the middleware here
+// ensures those errors are caught and returned as JSON rather than falling
+// through to the generic 404 handler.
+// ---------------------------------------------------------------------------
+const uploadMiddleware = (req, res, next) => {
+  upload.single('video')(req, res, (err) => {
+    if (err) {
+      // MulterError has a .code property; plain Errors come from fileFilter
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      return res.status(status).json({
+        error: err.message || 'File upload error',
+        code: err.code || 'UPLOAD_ERROR',
+      });
+    }
+    next();
+  });
+};
+
+// ---------------------------------------------------------------------------
 // POST /upload
 // ---------------------------------------------------------------------------
-router.post('/upload', upload.single('video'), async (req, res) => {
+router.post('/upload', uploadMiddleware, async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No video file provided' });
   }
