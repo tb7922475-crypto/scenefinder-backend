@@ -49,6 +49,8 @@ app.use('/api', searchRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api', indexStatusRoutes);
 
+logger.info('Routes registered: GET /api/library, POST /api/search, POST /api/upload, GET /api/index-status');
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
