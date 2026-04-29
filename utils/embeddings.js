@@ -2,23 +2,25 @@ require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const logger = require('./logger');
 
 // Accept either GEMINI_API_KEY (preferred) or the legacy GOOGLE_API_KEY
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey);
+const ai = new GoogleGenAI({ apiKey });
 
 /**
- * Generate a text embedding vector using the text-embedding-004 model.
+ * Generate a text embedding vector using the gemini-embedding-001 model.
  * @param {string} text - The input text to embed
  * @returns {Promise<number[]>} The embedding vector as an array of numbers
  */
 const generateEmbedding = async (text) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-    const result = await model.embedContent(text);
-    return result.embedding.values;
+    const result = await ai.models.embedContent({
+      model: 'gemini-embedding-001',
+      contents: text,
+    });
+    return result.embeddings[0].values;
   } catch (err) {
     logger.error('Text embedding generation error:', err.message);
     throw err;
@@ -38,16 +40,19 @@ const generateImageEmbedding = async (imagePath) => {
     const ext = path.extname(imagePath).toLowerCase().replace('.', '');
     const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
 
-    // Use gemini-pro-vision to generate a rich description, then embed that text.
-    // The text-embedding-004 model does not accept raw image bytes directly.
-    const visionModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const visionResult = await visionModel.generateContent([
-      {
-        inlineData: { data: base64Image, mimeType },
-      },
-      'Describe this video frame in detail for semantic search indexing.',
-    ]);
-    const description = visionResult.response.text();
+    // Use gemini-2.0-flash to generate a rich description, then embed that text.
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          parts: [
+            { inlineData: { data: base64Image, mimeType } },
+            { text: 'Describe this video frame in detail for semantic search indexing.' },
+          ],
+        },
+      ],
+    });
+    const description = result.text;
 
     // Embed the description text
     const embedding = await generateEmbedding(description);
