@@ -8,11 +8,16 @@
     "dev": "nodemon server.js",
     "migrate": "node db.js"
   },
-  "keywords": ["anime", "scene-search", "video-indexing", "embeddings"],
+  "keywords": [
+    "anime",
+    "scene-search",
+    "video-indexing",
+    "embeddings"
+  ],
   "author": "tb7922475-crypto",
   "license": "MIT",
   "dependencies": {
-    "@google/generative-ai": "^0.7.0",
+    "@google/genai": "^1.50.1",
     "axios": "^1.6.5",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

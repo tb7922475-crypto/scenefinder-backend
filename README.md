@@ -105,7 +105,7 @@ GET /api/index-status/:videoId   — Per-video indexing progress
 
 ### Health
 ```
-GET /  — Returns service status
+GET /api/health  — Returns service status
 ```
 
 ## Architecture
