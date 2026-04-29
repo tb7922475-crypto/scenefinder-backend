@@ -50,15 +50,8 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'scenefinder-backend',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-  });
-});
+// Serve static frontend from public/ (before API routes so index.html is served at /)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 logger.info('Registering /api routes...');
@@ -76,8 +69,15 @@ logger.info('All /api routes registered');
 
 logger.info('Routes registered: GET /api/library, POST /api/search, POST /api/upload, GET /api/index-status, POST /api/chat');
 
-// Serve static frontend from public/
-app.use(express.static(path.join(__dirname, 'public')));
+// Health check (after static so index.html takes precedence at /)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'scenefinder-backend',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // 404 handler
 app.use((req, res) => {
