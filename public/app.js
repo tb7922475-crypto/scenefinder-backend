@@ -211,6 +211,39 @@ const refreshLibrary = document.getElementById('refresh-library');
 
 refreshLibrary.addEventListener('click', loadLibrary);
 
+const reindexAllBtn = document.getElementById('reindex-all');
+if (reindexAllBtn) {
+  reindexAllBtn.addEventListener('click', async () => {
+    if (!confirm('Re-index all videos? This will regenerate all frame embeddings.')) return;
+    reindexAllBtn.disabled = true;
+    reindexAllBtn.textContent = 'Re-indexing...';
+    try {
+      const res = await fetch(`${API_BASE}/library/reindex-all`, { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      alert(data.message);
+      loadLibrary();
+    } catch (err) {
+      alert(`Re-index failed: ${err.message}`);
+    } finally {
+      reindexAllBtn.disabled = false;
+      reindexAllBtn.textContent = '🔄 Re-index All';
+    }
+  });
+}
+
+async function reindexVideo(videoId) {
+  try {
+    const res = await fetch(`${API_BASE}/library/${videoId}/reindex`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    alert(data.message);
+    loadLibrary();
+  } catch (err) {
+    alert(`Re-index failed: ${err.message}`);
+  }
+}
+
 async function loadLibrary() {
   libraryGrid.innerHTML = '<p class="empty-state"><span class="spinner"></span> Loading...</p>';
 
@@ -221,8 +254,11 @@ async function loadLibrary() {
 
     if (!data.videos || data.videos.length === 0) {
       libraryGrid.innerHTML = '<p class="empty-state">No videos uploaded yet. Go to Upload to add your first clip!</p>';
+      if (reindexAllBtn) reindexAllBtn.style.display = 'none';
       return;
     }
+
+    if (reindexAllBtn) reindexAllBtn.style.display = '';
 
     libraryGrid.innerHTML = data.videos.map(v => `
       <div class="library-card">
@@ -233,6 +269,7 @@ async function loadLibrary() {
           <span>Frames: ${v.frame_count}</span>
           <span>Status: <span class="status-badge ${statusClass(v.status)}">${v.status}</span></span>
           ${v.drive_link ? `<a href="${escapeHtml(v.drive_link)}" target="_blank" rel="noopener" class="result-link">📥 Google Drive</a>` : ''}
+          <button class="reindex-btn" onclick="reindexVideo('${v.video_id}')">🔄 Re-index</button>
         </div>
       </div>
     `).join('');

@@ -85,4 +85,69 @@ router.get('/library/:id', async (req, res) => {
   }
 });
 
+router.post('/library/:id/reindex', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+
+    const videoResult = await client.query(
+      `SELECT id, title, status FROM videos WHERE id = $1`,
+      [id]
+    );
+
+    if (videoResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM frames WHERE video_id = $1`, [id]);
+    await client.query(
+      `UPDATE videos SET status = 'pending', frame_count = 0, updated_at = NOW() WHERE id = $1`,
+      [id]
+    );
+    await client.query('COMMIT');
+
+    res.json({
+      message: `Video "${videoResult.rows[0].title}" queued for re-indexing`,
+      video_id: id,
+      status: 'pending',
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Re-index error:', err);
+    res.status(500).json({
+      error: 'Failed to queue re-index',
+      details: err.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
+router.post('/library/reindex-all', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM frames`);
+    const result = await client.query(
+      `UPDATE videos SET status = 'pending', frame_count = 0, updated_at = NOW() RETURNING id, title`
+    );
+    await client.query('COMMIT');
+
+    res.json({
+      message: `${result.rows.length} video(s) queued for re-indexing`,
+      videos: result.rows.map(r => ({ video_id: r.id, title: r.title })),
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Re-index all error:', err);
+    res.status(500).json({
+      error: 'Failed to queue re-index',
+      details: err.message,
+    });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;
