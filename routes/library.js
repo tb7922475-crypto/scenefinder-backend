@@ -85,4 +85,63 @@ router.get('/library/:id', async (req, res) => {
   }
 });
 
+router.post('/library/:id/reindex', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const videoResult = await db.query(
+      `SELECT id, title, status FROM videos WHERE id = $1`,
+      [id]
+    );
+
+    if (videoResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    // Delete existing frames so the indexer regenerates them
+    await db.query(`DELETE FROM frames WHERE video_id = $1`, [id]);
+
+    // Reset status to pending so the indexer picks it up
+    await db.query(
+      `UPDATE videos SET status = 'pending', frame_count = 0, updated_at = NOW() WHERE id = $1`,
+      [id]
+    );
+
+    res.json({
+      message: `Video "${videoResult.rows[0].title}" queued for re-indexing`,
+      video_id: id,
+      status: 'pending',
+    });
+  } catch (err) {
+    console.error('Re-index error:', err);
+    res.status(500).json({
+      error: 'Failed to queue re-index',
+      details: err.message,
+    });
+  }
+});
+
+router.post('/library/reindex-all', async (req, res) => {
+  try {
+    // Delete all existing frames
+    await db.query(`DELETE FROM frames`);
+
+    // Reset all videos to pending
+    const result = await db.query(
+      `UPDATE videos SET status = 'pending', frame_count = 0, updated_at = NOW() RETURNING id, title`
+    );
+
+    res.json({
+      message: `${result.rows.length} video(s) queued for re-indexing`,
+      videos: result.rows.map(r => ({ video_id: r.id, title: r.title })),
+    });
+  } catch (err) {
+    console.error('Re-index all error:', err);
+    res.status(500).json({
+      error: 'Failed to queue re-index',
+      details: err.message,
+    });
+  }
+});
+
 module.exports = router;

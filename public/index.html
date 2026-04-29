@@ -80,7 +80,10 @@
       <div class="library-container">
         <div class="library-header">
           <h2>Video Library</h2>
-          <button class="btn-secondary" id="refresh-library">Refresh</button>
+          <div class="library-actions">
+            <button class="btn-secondary" id="refresh-library">Refresh</button>
+            <button class="btn-secondary btn-reindex" id="reindex-all" style="display:none">🔄 Re-index All</button>
+          </div>
         </div>
         <div class="library-grid" id="library-grid">
           <p class="empty-state">Loading library...</p>

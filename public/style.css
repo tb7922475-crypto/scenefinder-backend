@@ -333,6 +333,20 @@ body {
 }
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
+.library-actions { display: flex; gap: 8px; }
+
+.reindex-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reindex-btn:hover { border-color: var(--accent); color: var(--accent); }
+
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
