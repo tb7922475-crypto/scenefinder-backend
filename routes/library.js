@@ -86,8 +86,9 @@ router.get('/library/:id', async (req, res) => {
 });
 
 router.post('/library/:id/reindex', async (req, res) => {
-  const client = await db.pool.connect();
+  let client;
   try {
+    client = await db.pool.connect();
     const { id } = req.params;
 
     const videoResult = await client.query(
@@ -113,20 +114,21 @@ router.post('/library/:id/reindex', async (req, res) => {
       status: 'pending',
     });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Re-index error:', err);
     res.status(500).json({
       error: 'Failed to queue re-index',
       details: err.message,
     });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
 router.post('/library/reindex-all', async (req, res) => {
-  const client = await db.pool.connect();
+  let client;
   try {
+    client = await db.pool.connect();
     await client.query('BEGIN');
     await client.query(`DELETE FROM frames`);
     const result = await client.query(
@@ -139,14 +141,14 @@ router.post('/library/reindex-all', async (req, res) => {
       videos: result.rows.map(r => ({ video_id: r.id, title: r.title })),
     });
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Re-index all error:', err);
     res.status(500).json({
       error: 'Failed to queue re-index',
       details: err.message,
     });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
