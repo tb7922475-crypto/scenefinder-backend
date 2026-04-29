@@ -67,7 +67,9 @@ router.post('/upload', uploadMiddleware, async (req, res) => {
   }
 
   const title = req.body.title || path.basename(req.file.originalname, path.extname(req.file.originalname));
+  const animeTitle = req.body.animeTitle || req.body.anime_title || null;
   const clipName = req.body.clipName || req.body.clip_name || null;
+  const driveLink = req.body.driveLink || req.body.drive_link || null;
   const videoPath = req.file.path;
   const FRAME_INTERVAL = parseInt(req.body.frameInterval, 10) || 1; // seconds
 
@@ -78,10 +80,10 @@ router.post('/upload', uploadMiddleware, async (req, res) => {
     // 1. Insert video record with status = 'pending' and respond immediately
     // ------------------------------------------------------------------
     const videoInsert = await db.query(
-      `INSERT INTO videos (title, clip_name, file_path, status)
-       VALUES ($1, $2, $3, 'pending')
+      `INSERT INTO videos (title, anime_title, clip_name, file_path, drive_link, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
        RETURNING id`,
-      [title, clipName, videoPath]
+      [title, animeTitle, clipName, videoPath, driveLink]
     );
     videoId = videoInsert.rows[0].id;
 
