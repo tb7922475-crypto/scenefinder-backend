@@ -10,13 +10,13 @@ const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
 /**
- * Generate a text embedding vector using the embedding-001 model.
+ * Generate a text embedding vector using the text-embedding-004 model.
  * @param {string} text - The input text to embed
  * @returns {Promise<number[]>} The embedding vector as an array of numbers
  */
 const generateEmbedding = async (text) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'embedding-001' });
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
     const result = await model.embedContent(text);
     return result.embedding.values;
   } catch (err) {
@@ -39,8 +39,8 @@ const generateImageEmbedding = async (imagePath) => {
     const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
 
     // Use gemini-pro-vision to generate a rich description, then embed that text.
-    // The embedding-001 model does not accept raw image bytes directly.
-    const visionModel = genAI.getGenerativeModel({ model: 'gemini-pro-vision' });
+    // The text-embedding-004 model does not accept raw image bytes directly.
+    const visionModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const visionResult = await visionModel.generateContent([
       {
         inlineData: { data: base64Image, mimeType },
