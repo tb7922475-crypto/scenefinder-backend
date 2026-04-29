@@ -22,7 +22,7 @@ router.post('/search', async (req, res) => {
       `SELECT 
         f.id, f.video_id, f.timestamp_seconds, f.description, 
         f.embedding, f.thumbnail_path,
-        v.title, v.clip_name, v.file_path
+        v.title, v.anime_title, v.clip_name, v.file_path, v.drive_link
        FROM frames f
        JOIN videos v ON f.video_id = v.id
        WHERE v.status = 'ready'`,
@@ -37,8 +37,10 @@ router.post('/search', async (req, res) => {
       embedding: row.embedding ? JSON.parse(row.embedding) : null,
       thumbnailPath: row.thumbnail_path,
       title: row.title,
+      animeTitle: row.anime_title,
       clipName: row.clip_name,
       filePath: row.file_path,
+      driveLink: row.drive_link,
     }));
 
     if (frames.length === 0) {
@@ -57,8 +59,10 @@ router.post('/search', async (req, res) => {
         groupedByVideo[result.videoId] = {
           videoId: result.videoId,
           title: result.title,
+          animeTitle: result.animeTitle,
           clipName: result.clipName,
           filePath: result.filePath,
+          driveLink: result.driveLink,
           frames: [],
         };
       }
@@ -75,9 +79,10 @@ router.post('/search', async (req, res) => {
 
       videoScenes.forEach(scene => {
         scenes.push({
-          animeTitle: videoGroup.title,
+          animeTitle: videoGroup.animeTitle || videoGroup.title,
           clipName: videoGroup.clipName,
           videoId: videoGroup.videoId,
+          driveLink: videoGroup.driveLink,
           startTimestamp: parseFloat(scene.startTimestamp.toFixed(2)),
           endTimestamp: parseFloat(scene.endTimestamp.toFixed(2)),
           confidence: parseFloat(scene.confidence.toFixed(4)),
@@ -99,6 +104,7 @@ router.post('/search', async (req, res) => {
       start_timestamp: scene.startTimestamp,
       end_timestamp: scene.endTimestamp,
       confidence: scene.confidence,
+      drive_link: scene.driveLink || null,
       thumbnail: scene.thumbnail || null,
       description: scene.description || null,
     }));

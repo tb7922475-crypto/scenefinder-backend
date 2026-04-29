@@ -46,14 +46,23 @@ const initSchema = async () => {
     CREATE TABLE IF NOT EXISTS videos (
       id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       title       TEXT NOT NULL,
+      anime_title TEXT,
       clip_name   TEXT,
       file_path   TEXT,
+      drive_link  TEXT,
       status      TEXT NOT NULL DEFAULT 'pending',
       frame_count INTEGER DEFAULT 0,
       duration_seconds NUMERIC DEFAULT 0,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    -- Add columns if they don't exist (for existing databases)
+    DO $$ BEGIN
+      ALTER TABLE videos ADD COLUMN IF NOT EXISTS anime_title TEXT;
+      ALTER TABLE videos ADD COLUMN IF NOT EXISTS drive_link TEXT;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS frames (
       id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),

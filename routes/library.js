@@ -7,8 +7,8 @@ router.get('/library', async (req, res) => {
   try {
     const result = await db.query(
       `SELECT 
-        id, title, clip_name, status, frame_count, duration_seconds, 
-        created_at, updated_at
+        id, title, anime_title, clip_name, drive_link, status,
+        frame_count, duration_seconds, created_at, updated_at
        FROM videos
        ORDER BY created_at DESC`,
       []
@@ -17,7 +17,9 @@ router.get('/library', async (req, res) => {
     const videos = result.rows.map(row => ({
       video_id: row.id,
       title: row.title,
+      anime_title: row.anime_title || null,
       clip_name: row.clip_name || null,
+      drive_link: row.drive_link || null,
       status: row.status,
       frame_count: row.frame_count || 0,
       duration: row.duration_seconds || 0,
@@ -65,7 +67,9 @@ router.get('/library/:id', async (req, res) => {
     res.json({
       video_id: video.id,
       title: video.title,
+      anime_title: video.anime_title || null,
       clip_name: video.clip_name || null,
+      drive_link: video.drive_link || null,
       status: video.status,
       frame_count: video.frame_count || frameCount,
       duration: video.duration_seconds || 0,

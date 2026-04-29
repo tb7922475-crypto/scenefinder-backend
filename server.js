@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 
 const { initSchema } = require('./db');
@@ -15,6 +16,8 @@ logger.info('Loading upload routes');
 const uploadRoutes = require('./routes/upload');
 logger.info('Loading index_status routes');
 const indexStatusRoutes = require('./routes/index_status');
+logger.info('Loading chat routes');
+const chatRoutes = require('./routes/chat');
 logger.info('All route modules loaded');
 
 const app = express();
@@ -67,9 +70,14 @@ logger.info('Registering upload routes at /api');
 app.use('/api', uploadRoutes);
 logger.info('Registering index_status routes at /api');
 app.use('/api', indexStatusRoutes);
+logger.info('Registering chat routes at /api');
+app.use('/api', chatRoutes);
 logger.info('All /api routes registered');
 
-logger.info('Routes registered: GET /api/library, POST /api/search, POST /api/upload, GET /api/index-status');
+logger.info('Routes registered: GET /api/library, POST /api/search, POST /api/upload, GET /api/index-status, POST /api/chat');
+
+// Serve static frontend from public/
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 404 handler
 app.use((req, res) => {

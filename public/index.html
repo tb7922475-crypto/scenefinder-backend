@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SceneFinder.AI — Anime Scene Search</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">🎬</span>
+          <h1>SceneFinder<span class="accent">.AI</span></h1>
+        </div>
+        <nav class="nav">
+          <button class="nav-btn active" data-tab="chat">Chat</button>
+          <button class="nav-btn" data-tab="search">Search</button>
+          <button class="nav-btn" data-tab="library">Library</button>
+          <button class="nav-btn" data-tab="upload">Upload</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Chat Tab -->
+    <main id="tab-chat" class="tab active">
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg bot">
+            <div class="chat-avatar">🤖</div>
+            <div class="chat-bubble">
+              <p>Hi! I'm <strong>SceneFinder.AI</strong> — your anime scene search assistant.</p>
+              <p>Describe any action from an anime fight clip and I'll find the exact timestamp for you.</p>
+              <p><strong>Supported anime:</strong> Jujutsu Kaisen, Chainsaw Man, Demon Slayer (coming soon)</p>
+              <p><strong>Example:</strong> "Toji slashes through the dragon"</p>
+            </div>
+          </div>
+        </div>
+        <form class="chat-input-form" id="chat-form">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder='Describe a scene... e.g. "Gojo removes his blindfold"'
+            autocomplete="off"
+          />
+          <button type="submit" class="btn-send" id="chat-send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <!-- Search Tab -->
+    <main id="tab-search" class="tab">
+      <div class="search-container">
+        <div class="search-hero">
+          <h2>Search Anime Scenes</h2>
+          <p>Enter a natural-language description of the action you're looking for.</p>
+          <form class="search-form" id="search-form">
+            <input
+              type="text"
+              id="search-input"
+              placeholder='e.g. "Toji throws a punch at Gojo"'
+              autocomplete="off"
+            />
+            <button type="submit" class="btn-primary">Search</button>
+          </form>
+        </div>
+        <div class="results" id="search-results"></div>
+      </div>
+    </main>
+
+    <!-- Library Tab -->
+    <main id="tab-library" class="tab">
+      <div class="library-container">
+        <div class="library-header">
+          <h2>Video Library</h2>
+          <button class="btn-secondary" id="refresh-library">Refresh</button>
+        </div>
+        <div class="library-grid" id="library-grid">
+          <p class="empty-state">Loading library...</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Upload Tab -->
+    <main id="tab-upload" class="tab">
+      <div class="upload-container">
+        <h2>Upload Anime Clip</h2>
+        <p>Upload a video file to index it for scene search.</p>
+        <form class="upload-form" id="upload-form">
+          <div class="form-group">
+            <label for="upload-title">Title *</label>
+            <input type="text" id="upload-title" placeholder="e.g. Toji vs Geto – Full Fight" required />
+          </div>
+          <div class="form-group">
+            <label for="upload-anime">Anime Title</label>
+            <input type="text" id="upload-anime" placeholder="e.g. Jujutsu Kaisen" />
+          </div>
+          <div class="form-group">
+            <label for="upload-clip">Clip Name</label>
+            <input type="text" id="upload-clip" placeholder="e.g. Toji vs Geto – Part 2" />
+          </div>
+          <div class="form-group">
+            <label for="upload-drive">Google Drive Link</label>
+            <input type="url" id="upload-drive" placeholder="https://drive.google.com/..." />
+          </div>
+          <div class="form-group">
+            <label for="upload-file">Video File *</label>
+            <div class="file-drop" id="file-drop">
+              <input type="file" id="upload-file" accept="video/*" required />
+              <p>Drag & drop a video file here, or <span class="link">browse</span></p>
+              <p class="file-info" id="file-info"></p>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="upload-btn">Upload & Index</button>
+          <div class="upload-progress" id="upload-progress" style="display:none">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <p id="upload-status">Uploading...</p>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- Index Status Bar -->
+    <footer class="status-bar" id="status-bar">
+      <span id="status-text">Connecting...</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
