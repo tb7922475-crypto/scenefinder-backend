@@ -227,7 +227,7 @@ if (reindexAllBtn) {
       alert(`Re-index failed: ${err.message}`);
     } finally {
       reindexAllBtn.disabled = false;
-      reindexAllBtn.textContent = 'Re-index All';
+      reindexAllBtn.textContent = '🔄 Re-index All';
     }
   });
 }
